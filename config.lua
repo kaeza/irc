@@ -4,8 +4,22 @@
 
 irc.config = {}
 
+local conf_warning_shown
+local settings = Settings(minetest.get_worldpath().."/irc.conf")
+
 local function setting(stype, name, default, required)
 	local value
+	if stype == "bool" then
+		value = settings:get_bool("irc."..name)
+	elseif stype == "string" then
+		value = settings:get("irc."..name)
+	elseif stype == "number" then
+		value = tonumber(settings:get("irc."..name))
+	end
+	if value ~= nil then
+		irc.config[name] = value
+		return
+	end
 	if stype == "bool" then
 		value = minetest.setting_getbool("irc."..name)
 	elseif stype == "string" then
@@ -16,9 +30,14 @@ local function setting(stype, name, default, required)
 	if value == nil then
 		if required then
 			error("Required configuration option irc."..
-				name.." missing.")
+					name.." missing.")
 		end
 		value = default
+	elseif not conf_warning_shown then
+		conf_warning_shown = true
+		minetest.log("warning", "Specifying IRC mod configuration in"
+				.." `minetest.conf` is deprecated. Please set the"
+				.." configuration in `<worldpath>/irc.conf`")
 	end
 	irc.config[name] = value
 end
